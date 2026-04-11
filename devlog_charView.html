@@ -1,0 +1,964 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>character viewer — dev log</title>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&family=Fraunces:ital,wght@0,300;0,400;1,300&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg: #0d0d0f;
+    --surface: #131316;
+    --surface2: #1a1a1f;
+    --surface3: #212128;
+    --border: rgba(255,255,255,0.07);
+    --border-hover: rgba(255,255,255,0.14);
+    --accent: #a78bfa;
+    --accent-dim: rgba(167,139,250,0.12);
+    --accent-glow: rgba(167,139,250,0.25);
+    --green: #4ade80;
+    --green-dim: rgba(74,222,128,0.1);
+    --amber: #fbbf24;
+    --amber-dim: rgba(251,191,36,0.1);
+    --text: #e8e8f0;
+    --text-muted: #7070a0;
+    --text-faint: #404060;
+    --mono: 'JetBrains Mono', monospace;
+    --serif: 'Fraunces', Georgia, serif;
+  }
+
+  html.light {
+    --bg: #f5f4f0;
+    --surface: #ffffff;
+    --surface2: #f0eeea;
+    --surface3: #e8e5e0;
+    --border: rgba(0,0,0,0.08);
+    --border-hover: rgba(0,0,0,0.16);
+    --accent: #7c3aed;
+    --accent-dim: rgba(124,58,237,0.08);
+    --accent-glow: rgba(124,58,237,0.2);
+    --green: #16a34a;
+    --green-dim: rgba(22,163,74,0.08);
+    --amber: #b45309;
+    --amber-dim: rgba(180,83,9,0.08);
+    --text: #1a1a2e;
+    --text-muted: #6b6b8a;
+    --text-faint: #a0a0b8;
+  }
+
+  html { scroll-behavior: smooth; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--mono);
+    font-size: 13px;
+    line-height: 1.7;
+    min-height: 100vh;
+  }
+
+  /* scanline texture */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background: repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(0,0,0,0.03) 2px, rgba(0,0,0,0.03) 4px);
+    pointer-events: none;
+    z-index: 999;
+  }
+
+  .page { max-width: 780px; margin: 0 auto; padding: 4rem 2rem 8rem; }
+
+  /* HERO */
+  .hero { margin-bottom: 4rem; padding-bottom: 3rem; border-bottom: 1px solid var(--border); }
+
+  .hero-eyebrow {
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--accent);
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    margin-bottom: 1rem;
+  }
+
+  .hero-title {
+    font-family: var(--serif);
+    font-size: clamp(2rem, 5vw, 3.2rem);
+    font-weight: 300;
+    line-height: 1.15;
+    color: var(--text);
+    margin-bottom: 0.5rem;
+  }
+
+  .hero-title em {
+    font-style: italic;
+    color: var(--accent);
+  }
+
+  .hero-sub {
+    font-size: 12px;
+    color: var(--text-muted);
+    margin-bottom: 2rem;
+    letter-spacing: 0.03em;
+  }
+
+  /* PROGRESS */
+  .progress-block { margin-bottom: 2rem; }
+
+  .progress-meta {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    margin-bottom: 0.5rem;
+  }
+
+  .progress-label { font-size: 11px; color: var(--text-muted); letter-spacing: 0.08em; }
+  .progress-pct { font-size: 22px; font-weight: 700; color: var(--accent); font-variant-numeric: tabular-nums; }
+
+  .bar-track {
+    height: 3px;
+    background: var(--surface3);
+    border-radius: 99px;
+    overflow: hidden;
+  }
+
+  .bar-fill {
+    height: 100%;
+    background: linear-gradient(90deg, #7c3aed, var(--accent));
+    border-radius: 99px;
+    transition: width 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  /* STATS ROW */
+  .stats {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 1px;
+    background: var(--border);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    overflow: hidden;
+    margin-bottom: 0;
+  }
+
+  .stat {
+    background: var(--surface);
+    padding: 1rem 1.25rem;
+    text-align: center;
+  }
+
+  .stat-val { font-size: 28px; font-weight: 700; color: var(--text); font-variant-numeric: tabular-nums; display: block; }
+  .stat-label { font-size: 10px; color: var(--text-muted); letter-spacing: 0.1em; text-transform: uppercase; margin-top: 2px; display: block; }
+
+  /* PHASE SECTIONS */
+  .phases { display: flex; flex-direction: column; gap: 2.5rem; }
+
+  .phase-header-row {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    margin-bottom: 1rem;
+    padding-bottom: 0.75rem;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .phase-number {
+    font-size: 10px;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    color: var(--text-faint);
+    font-weight: 700;
+    flex-shrink: 0;
+  }
+
+  .phase-title-text {
+    font-family: var(--serif);
+    font-size: 1.1rem;
+    font-weight: 300;
+    color: var(--text);
+    flex: 1;
+  }
+
+  .phase-count { font-size: 11px; color: var(--text-muted); flex-shrink: 0; }
+
+  .phase-badge {
+    font-size: 10px;
+    padding: 2px 8px;
+    border-radius: 99px;
+    letter-spacing: 0.05em;
+    flex-shrink: 0;
+  }
+
+  html.light body::before { background: repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(0,0,0,0.015) 2px, rgba(0,0,0,0.015) 4px); }
+
+  .badge-1 { background: rgba(124,58,237,0.1); color: var(--accent); border: 1px solid rgba(124,58,237,0.2); }
+  .badge-2 { background: rgba(22,163,74,0.1); color: var(--green); border: 1px solid rgba(22,163,74,0.2); }
+  .badge-3 { background: rgba(180,83,9,0.1); color: var(--amber); border: 1px solid rgba(180,83,9,0.2); }
+
+  /* WEEK CARDS */
+  .weeks { display: flex; flex-direction: column; gap: 2px; }
+
+  .week-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    overflow: hidden;
+    transition: border-color 0.2s;
+  }
+
+  .week-card:hover { border-color: var(--border-hover); }
+  .week-card.done { border-color: rgba(74,222,128,0.2); }
+  .week-card.active-entry { border-color: rgba(167,139,250,0.3); }
+
+  .week-summary {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 0.85rem 1rem;
+    cursor: pointer;
+    user-select: none;
+  }
+
+  .check-btn {
+    width: 22px; height: 22px;
+    border-radius: 50%;
+    border: 1.5px solid var(--text-faint);
+    background: transparent;
+    cursor: pointer;
+    flex-shrink: 0;
+    display: flex; align-items: center; justify-content: center;
+    transition: all 0.15s;
+    padding: 0;
+  }
+
+  .check-btn:hover { border-color: var(--green); background: var(--green-dim); }
+  .week-card.done .check-btn { background: var(--green); border-color: var(--green); }
+
+  .check-icon { display: none; width: 10px; height: 10px; }
+  .week-card.done .check-icon { display: block; }
+
+  .check-icon path { stroke: #0d0d0f; stroke-width: 2.5; fill: none; stroke-linecap: round; stroke-linejoin: round; }
+
+  .week-label-num {
+    font-size: 10px;
+    color: var(--text-faint);
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    min-width: 48px;
+    flex-shrink: 0;
+  }
+
+  .week-title-text {
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--text);
+    flex: 1;
+    line-height: 1.4;
+  }
+
+  .week-card.done .week-title-text { color: var(--text-muted); }
+
+  .week-actions { display: flex; align-items: center; gap: 8px; flex-shrink: 0; }
+
+  .log-btn {
+    font-family: var(--mono);
+    font-size: 10px;
+    color: var(--text-faint);
+    background: transparent;
+    border: 1px solid transparent;
+    padding: 3px 8px;
+    border-radius: 4px;
+    cursor: pointer;
+    letter-spacing: 0.05em;
+    transition: all 0.15s;
+  }
+
+  .log-btn:hover { color: var(--accent); border-color: rgba(167,139,250,0.3); background: var(--accent-dim); }
+  .log-btn.has-entry { color: var(--accent); }
+
+  .chevron {
+    color: var(--text-faint);
+    font-size: 10px;
+    transition: transform 0.2s;
+    flex-shrink: 0;
+  }
+
+  .week-card.open .chevron { transform: rotate(180deg); }
+
+  /* EXPANDED BODY */
+  .week-body { display: none; border-top: 1px solid var(--border); }
+  .week-card.open .week-body { display: block; }
+
+  .week-desc-area { padding: 1rem 1rem 0.75rem; }
+  .week-desc-text { font-size: 12px; color: var(--text-muted); line-height: 1.7; margin-bottom: 0.75rem; }
+
+  .resource-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 11px;
+    color: var(--accent);
+    text-decoration: none;
+    opacity: 0.8;
+    transition: opacity 0.15s;
+  }
+
+  .resource-link:hover { opacity: 1; }
+
+  /* LOG AREA */
+  .log-area { border-top: 1px solid var(--border); padding: 1rem; background: var(--surface2); }
+
+  .log-area-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 0.6rem;
+  }
+
+  .log-area-label {
+    font-size: 10px;
+    color: var(--text-faint);
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+  }
+
+  .log-date { font-size: 10px; color: var(--text-faint); margin-left: auto; }
+
+  textarea.log-input {
+    width: 100%;
+    background: var(--surface3);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    color: var(--text);
+    font-family: var(--mono);
+    font-size: 12px;
+    line-height: 1.7;
+    padding: 0.75rem 1rem;
+    resize: vertical;
+    min-height: 100px;
+    outline: none;
+    transition: border-color 0.15s;
+  }
+
+  textarea.log-input:focus { border-color: rgba(167,139,250,0.4); }
+  textarea.log-input::placeholder { color: var(--text-faint); }
+
+  .log-actions-row {
+    display: flex;
+    justify-content: flex-end;
+    gap: 8px;
+    margin-top: 0.5rem;
+  }
+
+  .btn-save {
+    font-family: var(--mono);
+    font-size: 11px;
+    background: var(--accent-dim);
+    color: var(--accent);
+    border: 1px solid rgba(167,139,250,0.3);
+    border-radius: 5px;
+    padding: 5px 14px;
+    cursor: pointer;
+    transition: all 0.15s;
+    letter-spacing: 0.05em;
+  }
+
+  .btn-save:hover { background: var(--accent-glow); }
+
+  .btn-clear {
+    font-family: var(--mono);
+    font-size: 11px;
+    background: transparent;
+    color: var(--text-faint);
+    border: 1px solid var(--border);
+    border-radius: 5px;
+    padding: 5px 14px;
+    cursor: pointer;
+    transition: all 0.15s;
+    letter-spacing: 0.05em;
+  }
+
+  .btn-clear:hover { color: #f87171; border-color: rgba(248,113,113,0.3); }
+
+  .save-flash {
+    font-size: 10px;
+    color: var(--green);
+    opacity: 0;
+    transition: opacity 0.3s;
+    align-self: center;
+  }
+
+  .save-flash.show { opacity: 1; }
+
+  /* IMAGE ATTACHMENTS */
+  .img-drop-zone {
+    margin-top: 0.75rem;
+    border: 1.5px dashed var(--border-hover);
+    border-radius: 6px;
+    padding: 0.75rem 1rem;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.15s;
+    background: var(--surface3);
+  }
+  .img-drop-zone:hover, .img-drop-zone.drag-over {
+    border-color: var(--accent);
+    background: var(--accent-dim);
+  }
+  .img-drop-label {
+    font-size: 11px;
+    color: var(--text-faint);
+    letter-spacing: 0.05em;
+    pointer-events: none;
+  }
+  .img-drop-label span { color: var(--accent); }
+
+  .img-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+    gap: 8px;
+    margin-top: 0.75rem;
+  }
+
+  .img-thumb {
+    position: relative;
+    border-radius: 6px;
+    overflow: hidden;
+    border: 1px solid var(--border);
+    aspect-ratio: 16/10;
+    background: var(--surface3);
+    cursor: pointer;
+  }
+
+  .img-thumb img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+    transition: opacity 0.15s;
+  }
+
+  .img-thumb:hover img { opacity: 0.7; }
+
+  .img-remove {
+    position: absolute;
+    top: 4px; right: 4px;
+    width: 18px; height: 18px;
+    border-radius: 50%;
+    background: rgba(0,0,0,0.7);
+    color: #fff;
+    border: none;
+    cursor: pointer;
+    font-size: 10px;
+    display: flex; align-items: center; justify-content: center;
+    opacity: 0;
+    transition: opacity 0.15s;
+    line-height: 1;
+    padding: 0;
+  }
+
+  .img-thumb:hover .img-remove { opacity: 1; }
+
+  .img-lightbox {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.88);
+    z-index: 1000;
+    align-items: center;
+    justify-content: center;
+    cursor: zoom-out;
+  }
+  .img-lightbox.open { display: flex; }
+  .img-lightbox img {
+    max-width: 90vw;
+    max-height: 90vh;
+    border-radius: 8px;
+    object-fit: contain;
+    cursor: default;
+  }
+  .lightbox-close {
+    position: absolute;
+    top: 1.25rem; right: 1.5rem;
+    font-family: var(--mono);
+    font-size: 11px;
+    color: rgba(255,255,255,0.5);
+    background: transparent;
+    border: 1px solid rgba(255,255,255,0.15);
+    border-radius: 5px;
+    padding: 4px 10px;
+    cursor: pointer;
+    letter-spacing: 0.05em;
+  }
+  .lightbox-close:hover { color: #fff; border-color: rgba(255,255,255,0.4); }
+
+  .storage-warning {
+    font-size: 10px;
+    color: #f87171;
+    margin-top: 4px;
+    display: none;
+  }
+
+  /* MILESTONE FOOTER */
+  .milestone-bar {
+    margin-top: 3rem;
+    padding: 1rem 1.25rem;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+  }
+
+  .milestone-dot {
+    width: 8px; height: 8px;
+    border-radius: 50%;
+    background: var(--accent);
+    flex-shrink: 0;
+    margin-top: 5px;
+    box-shadow: 0 0 10px var(--accent-glow);
+  }
+
+  .milestone-label { font-size: 10px; color: var(--text-faint); letter-spacing: 0.1em; text-transform: uppercase; margin-bottom: 2px; }
+  .milestone-text { font-size: 12px; color: var(--text-muted); }
+
+  /* THEME TOGGLE */
+  .theme-toggle {
+    position: fixed;
+    top: 1.25rem;
+    right: 1.5rem;
+    font-family: var(--mono);
+    font-size: 11px;
+    background: var(--surface);
+    color: var(--text-muted);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 5px 12px;
+    cursor: pointer;
+    letter-spacing: 0.06em;
+    transition: all 0.15s;
+    z-index: 100;
+  }
+  .theme-toggle:hover { color: var(--accent); border-color: var(--accent-glow); background: var(--accent-dim); }
+
+  /* ANIMATIONS */
+  @keyframes fadeIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+  .phase { animation: fadeIn 0.4s ease both; }
+  .phase:nth-child(2) { animation-delay: 0.08s; }
+  .phase:nth-child(3) { animation-delay: 0.16s; }
+</style>
+</head>
+<body>
+<button class="theme-toggle" id="theme-btn" onclick="toggleTheme()">// light</button>
+
+<div class="img-lightbox" id="lightbox" onclick="closeLightbox()">
+  <button class="lightbox-close" onclick="closeLightbox()">✕ close</button>
+  <img id="lightbox-img" src="" alt="screenshot" onclick="event.stopPropagation()">
+</div>
+
+<div class="page">
+
+  <div class="hero">
+    <div class="hero-eyebrow">// dev log</div>
+    <h1 class="hero-title">Stylized <em>character viewer</em><br>from scratch</h1>
+    <p class="hero-sub">C++ · OpenGL · GLTF · skeletal skinning · PBR · 12 weeks</p>
+
+    <div class="progress-block">
+      <div class="progress-meta">
+        <span class="progress-label" id="progress-label">0 of 12 weeks complete</span>
+        <span class="progress-pct" id="progress-pct">0%</span>
+      </div>
+      <div class="bar-track"><div class="bar-fill" id="bar-fill" style="width:0%"></div></div>
+    </div>
+
+    <div class="stats">
+      <div class="stat"><span class="stat-val" id="stat-done">0</span><span class="stat-label">done</span></div>
+      <div class="stat"><span class="stat-val" id="stat-left">12</span><span class="stat-label">left</span></div>
+      <div class="stat"><span class="stat-val" id="stat-phase">1</span><span class="stat-label">phase</span></div>
+    </div>
+  </div>
+
+  <div class="phases" id="phases-root"></div>
+
+  <div class="milestone-bar">
+    <div class="milestone-dot"></div>
+    <div>
+      <div class="milestone-label">next milestone</div>
+      <div class="milestone-text" id="milestone-text">complete week 1 — get a triangle on screen</div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+const STORAGE_KEY = 'char_viewer_v2';
+
+const phases = [
+  {
+    label: 'Phase 1', badgeClass: 'badge-1',
+    title: 'C++ basics + OpenGL foundations',
+    weeks: [
+      { id:'w1', num:'Week 01', title:'Environment setup + first triangle', desc:'Install compiler, set up CMake, link GLFW and GLEW. Get a colored triangle rendering. Understand the GPU pipeline at a high level.', href:'https://learnopengl.com/Getting-started/Hello-Triangle', res:'learnopengl.com — hello triangle' },
+      { id:'w2', num:'Week 02', title:'Shaders + uniforms + GLSL', desc:'Write vertex and fragment shaders. Pass uniforms like color and time. Understand how data flows from CPU to GPU.', href:'https://learnopengl.com/Getting-started/Shaders', res:'learnopengl.com — shaders' },
+      { id:'w3', num:'Week 03', title:'Textures + UVs + coordinate systems', desc:'Load PNG textures onto geometry. Understand UV unwrapping. Set up model/view/projection matrices using GLM.', href:'https://learnopengl.com/Getting-started/Textures', res:'learnopengl.com — textures' },
+      { id:'w4', num:'Week 04', title:'Orbit camera + mouse input', desc:'Implement arcball/orbit camera. Mouse drag to rotate, scroll to zoom. This becomes the core viewer interaction for your character.', href:'https://learnopengl.com/Getting-started/Camera', res:'learnopengl.com — camera' },
+    ]
+  },
+  {
+    label: 'Phase 2', badgeClass: 'badge-2',
+    title: 'GLTF loading + skeleton + skinning',
+    weeks: [
+      { id:'w5', num:'Week 05', title:'GLTF file format + tinygltf', desc:'Understand the GLTF spec: meshes, nodes, materials, skins. Integrate tinygltf library. Load and display a static character mesh.', href:'https://github.com/syoyo/tinygltf', res:'github — tinygltf loader' },
+      { id:'w6', num:'Week 06', title:'Skeleton parsing + bone hierarchy', desc:'Parse the joint/bone tree from GLTF skin data. Visualize the skeleton as lines on screen. Understand parent-child bone transforms.', href:'https://learnopengl.com/Guest-Articles/2020/Skeletal-Animation', res:'learnopengl.com — skeletal animation' },
+      { id:'w7', num:'Week 07', title:'Linear blend skinning (LBS)', desc:'Implement skinning in the vertex shader. Each vertex is weighted to multiple bones. This is the core of character deformation — a key industry skill.', href:'https://learnopengl.com/Guest-Articles/2020/Skeletal-Animation', res:'learnopengl.com — skeletal animation' },
+      { id:'w8', num:'Week 08', title:'Pose controls + ImGui panel', desc:'Integrate Dear ImGui. Add sliders to rotate individual bones (arm, head, spine). Users can manually pose the character. This is the try-on foundation.', href:'https://github.com/ocornut/imgui', res:'github — Dear ImGui' },
+    ]
+  },
+  {
+    label: 'Phase 3', badgeClass: 'badge-3',
+    title: 'PBR shading + garment layering + polish',
+    weeks: [
+      { id:'w9',  num:'Week 09', title:'Stylized PBR shading', desc:'Add PBR lighting with a stylized twist — cel shading rim light or toon ramp. Makes the character look intentionally artistic, not just technically correct.', href:'https://learnopengl.com/PBR/Theory', res:'learnopengl.com — PBR theory' },
+      { id:'w10', num:'Week 10', title:'Garment mesh loading + layering', desc:'Load a separate GLTF garment mesh. Bind it to the same skeleton so it deforms with the character. Swap garments via the UI panel.', href:'https://github.com/syoyo/tinygltf', res:'github — tinygltf loader' },
+      { id:'w11', num:'Week 11', title:'Normal maps + fabric detail + wind', desc:'Apply normal maps to garments for fabric texture detail. Add a subtle wind vertex offset so cloth gently moves. Big visual payoff in recordings.', href:'https://learnopengl.com/Advanced-Lighting/Normal-Mapping', res:'learnopengl.com — normal mapping' },
+      { id:'w12', num:'Week 12', title:'Portfolio polish + README + demo video', desc:'Clean the codebase, write a clear README explaining the skinning math, record a 60-second demo showing pose controls and garment swapping. Push to GitHub. Apply to CLO.', href:'https://docs.github.com/en/repositories/managing-your-repositorys-settings-and-features/customizing-your-repository/about-readmes', res:'github — writing a good README' },
+    ]
+  }
+];
+
+const milestones = [
+  'complete week 1 — triangle on screen',
+  'complete week 2 — write your first shader',
+  'complete week 3 — texture a mesh, set up 3D math',
+  'complete week 4 — orbit camera with mouse',
+  'complete week 5 — load a real character GLTF mesh',
+  'complete week 6 — parse and visualize the skeleton',
+  'complete week 7 — skinning shader deforming the mesh',
+  'complete week 8 — pose the character with ImGui sliders',
+  'complete week 9 — stylized PBR shading on character',
+  'complete week 10 — load and swap garment meshes',
+  'complete week 11 — normal maps + wind animation',
+  'complete week 12 — ship it, apply to CLO',
+];
+
+let state = { done: [], logs: {}, open: {}, images: {} };
+
+function save() {
+  try { localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); } catch(e) {
+    console.warn('localStorage save failed — likely storage quota exceeded');
+  }
+}
+
+function load() {
+  try {
+    const d = localStorage.getItem(STORAGE_KEY);
+    if (d) state = { ...state, ...JSON.parse(d) };
+    if (!Array.isArray(state.done)) state.done = [];
+    if (!state.logs) state.logs = {};
+    if (!state.open) state.open = {};
+    if (!state.images) state.images = {};
+  } catch(e) {}
+}
+
+function isDone(id) { return state.done.includes(id); }
+
+function updateStats() {
+  const n = state.done.length;
+  const pct = Math.round((n / 12) * 100);
+  document.getElementById('bar-fill').style.width = pct + '%';
+  document.getElementById('progress-label').textContent = n + ' of 12 weeks complete';
+  document.getElementById('progress-pct').textContent = pct + '%';
+  document.getElementById('stat-done').textContent = n;
+  document.getElementById('stat-left').textContent = 12 - n;
+  document.getElementById('stat-phase').textContent = n < 4 ? 1 : n < 8 ? 2 : 3;
+  document.getElementById('milestone-text').textContent = n < 12 ? milestones[n] : 'all done — submit that CLO application!';
+}
+
+function updatePhaseCount(phaseEl, phase) {
+  const done = phase.weeks.filter(w => isDone(w.id)).length;
+  phaseEl.querySelector('.phase-count').textContent = done + ' / ' + phase.weeks.length;
+}
+
+function makeCheckSvg() {
+  return `<svg class="check-icon" viewBox="0 0 12 12"><path d="M2 6l3 3 5-5"/></svg>`;
+}
+
+function render() {
+  const root = document.getElementById('phases-root');
+  root.innerHTML = '';
+
+  phases.forEach((phase, pi) => {
+    const phaseEl = document.createElement('div');
+    phaseEl.className = 'phase';
+
+    const doneCnt = phase.weeks.filter(w => isDone(w.id)).length;
+    phaseEl.innerHTML = `
+      <div class="phase-header-row">
+        <span class="phase-number">${phase.label}</span>
+        <span class="phase-title-text">${phase.title}</span>
+        <span class="phase-count">${doneCnt} / ${phase.weeks.length}</span>
+        <span class="phase-badge ${phase.badgeClass}">${phase.label}</span>
+      </div>
+      <div class="weeks" id="weeks-${pi}"></div>
+    `;
+
+    const weeksEl = phaseEl.querySelector(`#weeks-${pi}`);
+
+    phase.weeks.forEach(week => {
+      const card = document.createElement('div');
+      const isOpen = !!state.open[week.id];
+      const done = isDone(week.id);
+      const hasLog = !!(state.logs[week.id] && state.logs[week.id].trim());
+      card.className = 'week-card' + (done ? ' done' : '') + (isOpen ? ' open' : '') + (hasLog ? ' active-entry' : '');
+      card.id = 'card-' + week.id;
+
+      const savedText = state.logs[week.id] || '';
+      const today = new Date().toISOString().split('T')[0];
+
+      card.innerHTML = `
+        <div class="week-summary">
+          <button class="check-btn" data-id="${week.id}" title="mark complete" onclick="toggleDone('${week.id}', event)">
+            ${makeCheckSvg()}
+          </button>
+          <span class="week-label-num">${week.num}</span>
+          <span class="week-title-text">${week.title}</span>
+          <div class="week-actions">
+            <button class="log-btn${hasLog ? ' has-entry' : ''}" onclick="toggleLog('${week.id}', event)">${hasLog ? '// log ✦' : '// log'}</button>
+            <span class="chevron">▾</span>
+          </div>
+        </div>
+        <div class="week-body">
+          <div class="week-desc-area">
+            <p class="week-desc-text">${week.desc}</p>
+            <a class="resource-link" href="${week.href}" target="_blank">↗ ${week.res}</a>
+          </div>
+          <div class="log-area" id="log-${week.id}" style="display:none;">
+            <div class="log-area-header">
+              <span class="log-area-label">// dev notes</span>
+              <span class="log-date">${today}</span>
+            </div>
+            <textarea class="log-input" id="textarea-${week.id}" placeholder="what did you build, struggle with, learn today...">${savedText}</textarea>
+            <div class="img-drop-zone" id="drop-${week.id}" onclick="document.getElementById('fileinput-${week.id}').click()" ondragover="handleDragOver(event,'${week.id}')" ondragleave="handleDragLeave('${week.id}')" ondrop="handleDrop(event,'${week.id}')">
+              <input type="file" id="fileinput-${week.id}" accept="image/*" multiple style="display:none" onchange="handleFiles(event,'${week.id}')">
+              <div class="img-drop-label">drop screenshots here or <span>click to attach</span></div>
+            </div>
+            <div class="storage-warning" id="warn-${week.id}">storage limit reached — remove some images first</div>
+            <div class="img-grid" id="imgs-${week.id}"></div>
+            <div class="log-actions-row">
+              <span class="save-flash" id="flash-${week.id}">saved</span>
+              <button class="btn-clear" onclick="clearLog('${week.id}')">clear</button>
+              <button class="btn-save" onclick="saveLog('${week.id}')">save note</button>
+            </div>
+          </div>
+        </div>
+      `;
+
+      const summary = card.querySelector('.week-summary');
+      summary.addEventListener('click', (e) => {
+        if (e.target.closest('.check-btn') || e.target.closest('.log-btn')) return;
+        toggleOpen(week.id);
+      });
+
+      if (isOpen) {
+        const logArea = card.querySelector(`#log-${week.id}`);
+        if (hasLog) logArea.style.display = 'block';
+        renderImages(week.id);
+      }
+
+      weeksEl.appendChild(card);
+    });
+
+    root.appendChild(phaseEl);
+  });
+
+  updateStats();
+}
+
+function toggleOpen(id) {
+  state.open[id] = !state.open[id];
+  save();
+  const card = document.getElementById('card-' + id);
+  card.classList.toggle('open', !!state.open[id]);
+  const logArea = document.getElementById('log-' + id);
+  const hasLog = !!(state.logs[id] && state.logs[id].trim());
+  if (state.open[id] && hasLog) logArea.style.display = 'block';
+  if (!state.open[id]) logArea.style.display = 'none';
+}
+
+function toggleLog(id, e) {
+  e.stopPropagation();
+  const card = document.getElementById('card-' + id);
+  if (!card.classList.contains('open')) {
+    state.open[id] = true;
+    card.classList.add('open');
+  }
+  const logArea = document.getElementById('log-' + id);
+  const isVisible = logArea.style.display !== 'none';
+  logArea.style.display = isVisible ? 'none' : 'block';
+  if (!isVisible) {
+    renderImages(id);
+    setTimeout(() => document.getElementById('textarea-' + id)?.focus(), 50);
+  }
+  save();
+}
+
+function toggleDone(id, e) {
+  e.stopPropagation();
+  const idx = state.done.indexOf(id);
+  if (idx === -1) state.done.push(id);
+  else state.done.splice(idx, 1);
+  save();
+  render();
+}
+
+function saveLog(id) {
+  const ta = document.getElementById('textarea-' + id);
+  if (!ta) return;
+  state.logs[id] = ta.value;
+  save();
+  const flash = document.getElementById('flash-' + id);
+  if (flash) { flash.classList.add('show'); setTimeout(() => flash.classList.remove('show'), 1500); }
+  updateLogBtn(id);
+}
+
+function clearLog(id) {
+  if (!confirm('clear this note and all attached images?')) return;
+  state.logs[id] = '';
+  state.images[id] = [];
+  save();
+  const ta = document.getElementById('textarea-' + id);
+  if (ta) ta.value = '';
+  renderImages(id);
+  const card = document.getElementById('card-' + id);
+  card.classList.remove('active-entry');
+  const logBtn = card.querySelector('.log-btn');
+  if (logBtn) { logBtn.textContent = '// log'; logBtn.classList.remove('has-entry'); }
+}
+
+function renderImages(id) {
+  const grid = document.getElementById('imgs-' + id);
+  if (!grid) return;
+  const imgs = state.images[id] || [];
+  grid.innerHTML = '';
+  imgs.forEach((src, idx) => {
+    const thumb = document.createElement('div');
+    thumb.className = 'img-thumb';
+    thumb.innerHTML = `<img src="${src}" alt="screenshot ${idx+1}" onclick="openLightbox('${id}',${idx})"><button class="img-remove" onclick="removeImage('${id}',${idx},event)" title="remove">✕</button>`;
+    grid.appendChild(thumb);
+  });
+}
+
+function handleFiles(e, id) {
+  const files = Array.from(e.target.files);
+  processImageFiles(files, id);
+  e.target.value = '';
+}
+
+function handleDragOver(e, id) {
+  e.preventDefault();
+  document.getElementById('drop-' + id)?.classList.add('drag-over');
+}
+
+function handleDragLeave(id) {
+  document.getElementById('drop-' + id)?.classList.remove('drag-over');
+}
+
+function handleDrop(e, id) {
+  e.preventDefault();
+  document.getElementById('drop-' + id)?.classList.remove('drag-over');
+  const files = Array.from(e.dataTransfer.files).filter(f => f.type.startsWith('image/'));
+  processImageFiles(files, id);
+}
+
+function processImageFiles(files, id) {
+  if (!state.images[id]) state.images[id] = [];
+  let pending = files.length;
+  if (pending === 0) return;
+  files.forEach(file => {
+    const reader = new FileReader();
+    reader.onload = (ev) => {
+      state.images[id].push(ev.target.result);
+      pending--;
+      if (pending === 0) {
+        try {
+          save();
+          document.getElementById('warn-' + id).style.display = 'none';
+        } catch(err) {
+          state.images[id].pop();
+          document.getElementById('warn-' + id).style.display = 'block';
+        }
+        renderImages(id);
+        updateLogBtn(id);
+      }
+    };
+    reader.readAsDataURL(file);
+  });
+}
+
+function removeImage(id, idx, e) {
+  e.stopPropagation();
+  if (!state.images[id]) return;
+  state.images[id].splice(idx, 1);
+  save();
+  renderImages(id);
+  updateLogBtn(id);
+}
+
+function updateLogBtn(id) {
+  const card = document.getElementById('card-' + id);
+  if (!card) return;
+  const hasLog = !!(state.logs[id] && state.logs[id].trim());
+  const hasImgs = !!(state.images[id] && state.images[id].length);
+  const hasEntry = hasLog || hasImgs;
+  card.classList.toggle('active-entry', hasEntry);
+  const logBtn = card.querySelector('.log-btn');
+  if (logBtn) {
+    logBtn.textContent = hasEntry ? '// log ✦' : '// log';
+    logBtn.classList.toggle('has-entry', hasEntry);
+  }
+}
+
+function openLightbox(id, idx) {
+  const src = (state.images[id] || [])[idx];
+  if (!src) return;
+  document.getElementById('lightbox-img').src = src;
+  document.getElementById('lightbox').classList.add('open');
+}
+
+function closeLightbox() {
+  document.getElementById('lightbox').classList.remove('open');
+  document.getElementById('lightbox-img').src = '';
+}
+
+document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeLightbox(); });
+
+function toggleTheme() {
+  const isLight = document.documentElement.classList.toggle('light');
+  document.getElementById('theme-btn').textContent = isLight ? '// dark' : '// light';
+  try { localStorage.setItem('devlog_theme', isLight ? 'light' : 'dark'); } catch(e) {}
+}
+function loadTheme() {
+  try {
+    const t = localStorage.getItem('devlog_theme');
+    if (t === 'dark') {
+      document.documentElement.classList.remove('light');
+      document.getElementById('theme-btn').textContent = '// light';
+    } else {
+      document.documentElement.classList.add('light');
+      document.getElementById('theme-btn').textContent = '// dark';
+    }
+  } catch(e) {
+    document.documentElement.classList.add('light');
+    document.getElementById('theme-btn').textContent = '// dark';
+  }
+}
+
+load();
+loadTheme();
+render();
+</script>
+</body>
+</html>
