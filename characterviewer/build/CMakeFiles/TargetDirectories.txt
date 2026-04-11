@@ -1,0 +1,3 @@
+/Users/tachibis/LocalDocuments/LocalProjects/HumeshView/characterviewer/build/CMakeFiles/HelloTriangle.dir
+/Users/tachibis/LocalDocuments/LocalProjects/HumeshView/characterviewer/build/CMakeFiles/edit_cache.dir
+/Users/tachibis/LocalDocuments/LocalProjects/HumeshView/characterviewer/build/CMakeFiles/rebuild_cache.dir
