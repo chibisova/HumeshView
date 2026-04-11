@@ -549,6 +549,128 @@
   .phase { animation: fadeIn 0.4s ease both; }
   .phase:nth-child(2) { animation-delay: 0.08s; }
   .phase:nth-child(3) { animation-delay: 0.16s; }
+
+  /* LOG INDICATOR (main list) */
+  .log-indicator { font-size: 10px; color: var(--accent); letter-spacing: 0.05em; }
+  .week-card { cursor: pointer; }
+  .week-card:hover .chevron { color: var(--accent); }
+  .week-card .chevron { transition: color 0.15s, transform 0.15s; }
+  .week-card:hover .chevron { transform: translateX(3px); }
+
+  /* WEEK DETAIL PAGE */
+  .wp-nav {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 2.5rem;
+  }
+
+  .wp-back {
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--text-muted);
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 5px;
+    padding: 5px 14px;
+    cursor: pointer;
+    letter-spacing: 0.05em;
+    transition: all 0.15s;
+  }
+  .wp-back:hover { color: var(--accent); border-color: var(--accent-glow); background: var(--accent-dim); }
+
+  .wp-crumb { font-size: 11px; color: var(--text-faint); }
+
+  .wp-header {
+    margin-bottom: 2rem;
+    padding-bottom: 1.5rem;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .wp-eyebrow {
+    font-size: 10px;
+    color: var(--accent);
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    margin-bottom: 0.5rem;
+  }
+
+  .wp-title {
+    font-family: var(--serif);
+    font-size: clamp(1.5rem, 4vw, 2.2rem);
+    font-weight: 300;
+    color: var(--text);
+    line-height: 1.2;
+    margin-bottom: 0.4rem;
+  }
+
+  .wp-phase { font-size: 11px; color: var(--text-muted); }
+
+  .wp-desc-section { margin-bottom: 0; }
+  .wp-desc-text { font-size: 13px; color: var(--text-muted); line-height: 1.75; margin-bottom: 0.75rem; }
+
+  .wp-section-label {
+    font-size: 10px;
+    color: var(--text-faint);
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    margin-bottom: 0.6rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+
+  .wp-notes-section {
+    margin-bottom: 1.5rem;
+    margin-top: 2rem;
+    padding-top: 1.5rem;
+    border-top: 1px solid var(--border);
+  }
+
+  textarea.wp-textarea {
+    width: 100%;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    color: var(--text);
+    font-family: var(--mono);
+    font-size: 13px;
+    line-height: 1.75;
+    padding: 1rem 1.25rem;
+    resize: vertical;
+    min-height: 200px;
+    outline: none;
+    transition: border-color 0.15s;
+  }
+  textarea.wp-textarea:focus { border-color: rgba(167,139,250,0.4); }
+  textarea.wp-textarea::placeholder { color: var(--text-faint); }
+
+  .wp-imgs-section { margin-bottom: 2rem; }
+
+  .wp-actions {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+    padding-top: 0.5rem;
+  }
+  .wp-actions .save-flash { margin-right: auto; }
+
+  .btn-complete {
+    font-family: var(--mono);
+    font-size: 11px;
+    background: var(--green-dim);
+    color: var(--green);
+    border: 1px solid rgba(74,222,128,0.25);
+    border-radius: 5px;
+    padding: 5px 14px;
+    cursor: pointer;
+    transition: all 0.15s;
+    letter-spacing: 0.05em;
+  }
+  .btn-complete:hover { background: rgba(74,222,128,0.15); }
+  .btn-complete.is-done { background: var(--green); color: #0d0d0f; border-color: var(--green); }
+  .btn-complete.is-done:hover { background: #22c55e; }
 </style>
 </head>
 <body>
@@ -559,7 +681,7 @@
   <img id="lightbox-img" src="" alt="screenshot" onclick="event.stopPropagation()">
 </div>
 
-<div class="page">
+<div class="page" id="main-page">
 
   <div class="hero">
     <div class="hero-eyebrow">// dev log</div>
@@ -591,6 +713,48 @@
     </div>
   </div>
 
+</div>
+
+<div class="page" id="week-page" style="display:none">
+  <nav class="wp-nav">
+    <button class="wp-back" onclick="window.location.hash=''">← back to log</button>
+    <span class="wp-crumb" id="wp-crumb"></span>
+  </nav>
+  <div class="wp-header">
+    <div class="wp-eyebrow" id="wp-eyebrow"></div>
+    <h1 class="wp-title" id="wp-title"></h1>
+    <div class="wp-phase" id="wp-phase"></div>
+  </div>
+  <div class="wp-desc-section">
+    <p class="wp-desc-text" id="wp-desc"></p>
+    <a class="resource-link" id="wp-resource" href="#" target="_blank"></a>
+  </div>
+  <div class="wp-notes-section">
+    <div class="wp-section-label">
+      <span>// dev notes</span>
+      <span id="wp-date"></span>
+    </div>
+    <textarea class="wp-textarea" id="wp-textarea" placeholder="what did you build, struggle with, learn today..."></textarea>
+  </div>
+  <div class="wp-imgs-section">
+    <div class="wp-section-label">// screenshots</div>
+    <div class="img-drop-zone" id="wp-drop"
+         onclick="document.getElementById('wp-fileinput').click()"
+         ondragover="wpDragOver(event)"
+         ondragleave="wpDragLeave()"
+         ondrop="wpDrop(event)">
+      <input type="file" id="wp-fileinput" accept="image/*" multiple style="display:none" onchange="wpHandleFiles(event)">
+      <div class="img-drop-label">drop screenshots here or <span>click to attach</span></div>
+    </div>
+    <div class="storage-warning" id="wp-warn">storage limit reached — remove some images first</div>
+    <div class="img-grid" id="wp-imgs"></div>
+  </div>
+  <div class="wp-actions">
+    <span class="save-flash" id="wp-flash">saved</span>
+    <button class="btn-clear" onclick="wpClearLog()">clear</button>
+    <button class="btn-complete" id="wp-complete-btn" onclick="wpToggleDone()">mark complete</button>
+    <button class="btn-save" onclick="wpSaveLog()">save note</button>
+  </div>
 </div>
 
 <script>
@@ -644,7 +808,8 @@ const milestones = [
   'complete week 12 — ship it, apply to CLO',
 ];
 
-let state = { done: [], logs: {}, open: {}, images: {} };
+let state = { done: [], logs: {}, images: {} };
+let currentWeekId = null;
 
 function save() {
   try { localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); } catch(e) {
@@ -658,7 +823,6 @@ function load() {
     if (d) state = { ...state, ...JSON.parse(d) };
     if (!Array.isArray(state.done)) state.done = [];
     if (!state.logs) state.logs = {};
-    if (!state.open) state.open = {};
     if (!state.images) state.images = {};
   } catch(e) {}
 }
@@ -677,23 +841,19 @@ function updateStats() {
   document.getElementById('milestone-text').textContent = n < 12 ? milestones[n] : 'all done — submit that CLO application!';
 }
 
-function updatePhaseCount(phaseEl, phase) {
-  const done = phase.weeks.filter(w => isDone(w.id)).length;
-  phaseEl.querySelector('.phase-count').textContent = done + ' / ' + phase.weeks.length;
-}
-
 function makeCheckSvg() {
   return `<svg class="check-icon" viewBox="0 0 12 12"><path d="M2 6l3 3 5-5"/></svg>`;
 }
 
+/* ── MAIN PAGE ── */
 function render() {
   const root = document.getElementById('phases-root');
+  if (!root) return;
   root.innerHTML = '';
 
   phases.forEach((phase, pi) => {
     const phaseEl = document.createElement('div');
     phaseEl.className = 'phase';
-
     const doneCnt = phase.weeks.filter(w => isDone(w.id)).length;
     phaseEl.innerHTML = `
       <div class="phase-header-row">
@@ -704,105 +864,41 @@ function render() {
       </div>
       <div class="weeks" id="weeks-${pi}"></div>
     `;
-
     const weeksEl = phaseEl.querySelector(`#weeks-${pi}`);
 
     phase.weeks.forEach(week => {
       const card = document.createElement('div');
-      const isOpen = !!state.open[week.id];
       const done = isDone(week.id);
       const hasLog = !!(state.logs[week.id] && state.logs[week.id].trim());
-      card.className = 'week-card' + (done ? ' done' : '') + (isOpen ? ' open' : '') + (hasLog ? ' active-entry' : '');
+      const hasImgs = !!(state.images[week.id] && state.images[week.id].length);
+      const hasEntry = hasLog || hasImgs;
+      card.className = 'week-card' + (done ? ' done' : '') + (hasEntry ? ' active-entry' : '');
       card.id = 'card-' + week.id;
-
-      const savedText = state.logs[week.id] || '';
-      const today = new Date().toISOString().split('T')[0];
 
       card.innerHTML = `
         <div class="week-summary">
-          <button class="check-btn" data-id="${week.id}" title="mark complete" onclick="toggleDone('${week.id}', event)">
+          <button class="check-btn" title="mark complete" onclick="toggleDone('${week.id}', event)">
             ${makeCheckSvg()}
           </button>
           <span class="week-label-num">${week.num}</span>
           <span class="week-title-text">${week.title}</span>
           <div class="week-actions">
-            <button class="log-btn${hasLog ? ' has-entry' : ''}" onclick="toggleLog('${week.id}', event)">${hasLog ? '// log ✦' : '// log'}</button>
-            <span class="chevron">▾</span>
-          </div>
-        </div>
-        <div class="week-body">
-          <div class="week-desc-area">
-            <p class="week-desc-text">${week.desc}</p>
-            <a class="resource-link" href="${week.href}" target="_blank">↗ ${week.res}</a>
-          </div>
-          <div class="log-area" id="log-${week.id}" style="display:none;">
-            <div class="log-area-header">
-              <span class="log-area-label">// dev notes</span>
-              <span class="log-date">${today}</span>
-            </div>
-            <textarea class="log-input" id="textarea-${week.id}" placeholder="what did you build, struggle with, learn today...">${savedText}</textarea>
-            <div class="img-drop-zone" id="drop-${week.id}" onclick="document.getElementById('fileinput-${week.id}').click()" ondragover="handleDragOver(event,'${week.id}')" ondragleave="handleDragLeave('${week.id}')" ondrop="handleDrop(event,'${week.id}')">
-              <input type="file" id="fileinput-${week.id}" accept="image/*" multiple style="display:none" onchange="handleFiles(event,'${week.id}')">
-              <div class="img-drop-label">drop screenshots here or <span>click to attach</span></div>
-            </div>
-            <div class="storage-warning" id="warn-${week.id}">storage limit reached — remove some images first</div>
-            <div class="img-grid" id="imgs-${week.id}"></div>
-            <div class="log-actions-row">
-              <span class="save-flash" id="flash-${week.id}">saved</span>
-              <button class="btn-clear" onclick="clearLog('${week.id}')">clear</button>
-              <button class="btn-save" onclick="saveLog('${week.id}')">save note</button>
-            </div>
+            ${hasEntry ? '<span class="log-indicator">// log ✦</span>' : ''}
+            <span class="chevron">→</span>
           </div>
         </div>
       `;
 
-      const summary = card.querySelector('.week-summary');
-      summary.addEventListener('click', (e) => {
-        if (e.target.closest('.check-btn') || e.target.closest('.log-btn')) return;
-        toggleOpen(week.id);
+      card.addEventListener('click', (e) => {
+        if (e.target.closest('.check-btn')) return;
+        openWeek(week.id);
       });
-
-      if (isOpen) {
-        const logArea = card.querySelector(`#log-${week.id}`);
-        if (hasLog) logArea.style.display = 'block';
-        renderImages(week.id);
-      }
 
       weeksEl.appendChild(card);
     });
-
     root.appendChild(phaseEl);
   });
-
   updateStats();
-}
-
-function toggleOpen(id) {
-  state.open[id] = !state.open[id];
-  save();
-  const card = document.getElementById('card-' + id);
-  card.classList.toggle('open', !!state.open[id]);
-  const logArea = document.getElementById('log-' + id);
-  const hasLog = !!(state.logs[id] && state.logs[id].trim());
-  if (state.open[id] && hasLog) logArea.style.display = 'block';
-  if (!state.open[id]) logArea.style.display = 'none';
-}
-
-function toggleLog(id, e) {
-  e.stopPropagation();
-  const card = document.getElementById('card-' + id);
-  if (!card.classList.contains('open')) {
-    state.open[id] = true;
-    card.classList.add('open');
-  }
-  const logArea = document.getElementById('log-' + id);
-  const isVisible = logArea.style.display !== 'none';
-  logArea.style.display = isVisible ? 'none' : 'block';
-  if (!isVisible) {
-    renderImages(id);
-    setTimeout(() => document.getElementById('textarea-' + id)?.focus(), 50);
-  }
-  save();
 }
 
 function toggleDone(id, e) {
@@ -814,63 +910,120 @@ function toggleDone(id, e) {
   render();
 }
 
-function saveLog(id) {
-  const ta = document.getElementById('textarea-' + id);
+/* ── ROUTING ── */
+function openWeek(id) { window.location.hash = id; }
+
+function route() {
+  const hash = window.location.hash.replace('#', '');
+  const allWeeks = phases.flatMap(p => p.weeks);
+  const week = allWeeks.find(w => w.id === hash);
+  const mainPage = document.getElementById('main-page');
+  const weekPage = document.getElementById('week-page');
+
+  if (week) {
+    mainPage.style.display = 'none';
+    weekPage.style.display = 'block';
+    currentWeekId = week.id;
+    renderWeekPage(week);
+  } else {
+    mainPage.style.display = 'block';
+    weekPage.style.display = 'none';
+    currentWeekId = null;
+    render();
+  }
+}
+
+/* ── WEEK DETAIL PAGE ── */
+function renderWeekPage(week) {
+  const phase = phases.find(p => p.weeks.some(w => w.id === week.id));
+  document.getElementById('wp-eyebrow').textContent = week.num;
+  document.getElementById('wp-title').textContent = week.title;
+  document.getElementById('wp-phase').textContent = phase ? phase.label + ' · ' + phase.title : '';
+  document.getElementById('wp-crumb').textContent = phase ? phase.label : '';
+  document.getElementById('wp-desc').textContent = week.desc;
+  const resLink = document.getElementById('wp-resource');
+  resLink.href = week.href;
+  resLink.textContent = '↗ ' + week.res;
+  document.getElementById('wp-date').textContent = new Date().toISOString().split('T')[0];
+  document.getElementById('wp-textarea').value = state.logs[week.id] || '';
+  document.getElementById('wp-warn').style.display = 'none';
+  updateWpCompleteBtn();
+  renderWpImages();
+  window.scrollTo(0, 0);
+}
+
+function updateWpCompleteBtn() {
+  const btn = document.getElementById('wp-complete-btn');
+  if (!btn || !currentWeekId) return;
+  const done = isDone(currentWeekId);
+  btn.textContent = done ? 'unmark complete' : 'mark complete';
+  btn.classList.toggle('is-done', done);
+}
+
+function wpSaveLog() {
+  if (!currentWeekId) return;
+  const ta = document.getElementById('wp-textarea');
   if (!ta) return;
-  state.logs[id] = ta.value;
+  state.logs[currentWeekId] = ta.value;
   save();
-  const flash = document.getElementById('flash-' + id);
+  const flash = document.getElementById('wp-flash');
   if (flash) { flash.classList.add('show'); setTimeout(() => flash.classList.remove('show'), 1500); }
-  updateLogBtn(id);
 }
 
-function clearLog(id) {
+function wpClearLog() {
+  if (!currentWeekId) return;
   if (!confirm('clear this note and all attached images?')) return;
-  state.logs[id] = '';
-  state.images[id] = [];
+  state.logs[currentWeekId] = '';
+  state.images[currentWeekId] = [];
   save();
-  const ta = document.getElementById('textarea-' + id);
-  if (ta) ta.value = '';
-  renderImages(id);
-  const card = document.getElementById('card-' + id);
-  card.classList.remove('active-entry');
-  const logBtn = card.querySelector('.log-btn');
-  if (logBtn) { logBtn.textContent = '// log'; logBtn.classList.remove('has-entry'); }
+  document.getElementById('wp-textarea').value = '';
+  renderWpImages();
 }
 
-function renderImages(id) {
-  const grid = document.getElementById('imgs-' + id);
+function wpToggleDone() {
+  if (!currentWeekId) return;
+  const idx = state.done.indexOf(currentWeekId);
+  if (idx === -1) state.done.push(currentWeekId);
+  else state.done.splice(idx, 1);
+  save();
+  updateWpCompleteBtn();
+}
+
+/* ── IMAGES — WEEK PAGE ── */
+function renderWpImages() {
+  const id = currentWeekId;
+  if (!id) return;
+  const grid = document.getElementById('wp-imgs');
   if (!grid) return;
   const imgs = state.images[id] || [];
   grid.innerHTML = '';
   imgs.forEach((src, idx) => {
     const thumb = document.createElement('div');
     thumb.className = 'img-thumb';
-    thumb.innerHTML = `<img src="${src}" alt="screenshot ${idx+1}" onclick="openLightbox('${id}',${idx})"><button class="img-remove" onclick="removeImage('${id}',${idx},event)" title="remove">✕</button>`;
+    thumb.innerHTML = `<img src="${src}" alt="screenshot ${idx+1}" onclick="openLightbox('${id}',${idx})"><button class="img-remove" onclick="wpRemoveImage(${idx},event)" title="remove">✕</button>`;
     grid.appendChild(thumb);
   });
 }
 
-function handleFiles(e, id) {
-  const files = Array.from(e.target.files);
-  processImageFiles(files, id);
-  e.target.value = '';
+function wpRemoveImage(idx, e) {
+  e.stopPropagation();
+  if (!currentWeekId || !state.images[currentWeekId]) return;
+  state.images[currentWeekId].splice(idx, 1);
+  save();
+  renderWpImages();
 }
 
-function handleDragOver(e, id) {
+function wpDragOver(e) { e.preventDefault(); document.getElementById('wp-drop')?.classList.add('drag-over'); }
+function wpDragLeave() { document.getElementById('wp-drop')?.classList.remove('drag-over'); }
+function wpDrop(e) {
   e.preventDefault();
-  document.getElementById('drop-' + id)?.classList.add('drag-over');
-}
-
-function handleDragLeave(id) {
-  document.getElementById('drop-' + id)?.classList.remove('drag-over');
-}
-
-function handleDrop(e, id) {
-  e.preventDefault();
-  document.getElementById('drop-' + id)?.classList.remove('drag-over');
+  document.getElementById('wp-drop')?.classList.remove('drag-over');
   const files = Array.from(e.dataTransfer.files).filter(f => f.type.startsWith('image/'));
-  processImageFiles(files, id);
+  if (currentWeekId) processImageFiles(files, currentWeekId);
+}
+function wpHandleFiles(e) {
+  if (currentWeekId) processImageFiles(Array.from(e.target.files), currentWeekId);
+  e.target.value = '';
 }
 
 function processImageFiles(files, id) {
@@ -885,40 +1038,30 @@ function processImageFiles(files, id) {
       if (pending === 0) {
         try {
           save();
-          document.getElementById('warn-' + id).style.display = 'none';
+          document.getElementById('wp-warn').style.display = 'none';
         } catch(err) {
           state.images[id].pop();
-          document.getElementById('warn-' + id).style.display = 'block';
+          document.getElementById('wp-warn').style.display = 'block';
         }
-        renderImages(id);
-        updateLogBtn(id);
+        if (currentWeekId === id) renderWpImages();
       }
     };
     reader.readAsDataURL(file);
   });
 }
 
-function removeImage(id, idx, e) {
-  e.stopPropagation();
-  if (!state.images[id]) return;
-  state.images[id].splice(idx, 1);
-  save();
-  renderImages(id);
-  updateLogBtn(id);
-}
-
-function updateLogBtn(id) {
-  const card = document.getElementById('card-' + id);
-  if (!card) return;
-  const hasLog = !!(state.logs[id] && state.logs[id].trim());
-  const hasImgs = !!(state.images[id] && state.images[id].length);
-  const hasEntry = hasLog || hasImgs;
-  card.classList.toggle('active-entry', hasEntry);
-  const logBtn = card.querySelector('.log-btn');
-  if (logBtn) {
-    logBtn.textContent = hasEntry ? '// log ✦' : '// log';
-    logBtn.classList.toggle('has-entry', hasEntry);
-  }
+/* ── LIGHTBOX ── */
+function renderImages(id) {
+  const grid = document.getElementById('imgs-' + id);
+  if (!grid) return;
+  const imgs = state.images[id] || [];
+  grid.innerHTML = '';
+  imgs.forEach((src, idx) => {
+    const thumb = document.createElement('div');
+    thumb.className = 'img-thumb';
+    thumb.innerHTML = `<img src="${src}" alt="screenshot ${idx+1}" onclick="openLightbox('${id}',${idx})"><button class="img-remove" onclick="removeImage('${id}',${idx},event)" title="remove">✕</button>`;
+    grid.appendChild(thumb);
+  });
 }
 
 function openLightbox(id, idx) {
@@ -935,6 +1078,7 @@ function closeLightbox() {
 
 document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeLightbox(); });
 
+/* ── THEME ── */
 function toggleTheme() {
   const isLight = document.documentElement.classList.toggle('light');
   document.getElementById('theme-btn').textContent = isLight ? '// dark' : '// light';
@@ -958,7 +1102,8 @@ function loadTheme() {
 
 load();
 loadTheme();
-render();
+route();
+window.addEventListener('hashchange', route);
 </script>
 </body>
 </html>
