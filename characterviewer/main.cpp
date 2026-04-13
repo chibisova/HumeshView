@@ -105,16 +105,50 @@ int main()
          0.0f,  0.5f, 0.0f  // top
     };
 
-    unsigned int VAO, VBO;
+    float vertices2_bad[] = {
+        // first triangle
+         0.5f,  0.5f, 0.0f,  // top right
+         0.5f, -0.5f, 0.0f,  // bottom right
+        -0.5f,  0.5f, 0.0f,  // top left 
+        // second triangle
+         0.5f, -0.5f, 0.0f,  // bottom right
+        -0.5f, -0.5f, 0.0f,  // bottom left
+        -0.5f,  0.5f, 0.0f   // top left
+    }; 
+
+    float vertices2_EBOopt[] = {
+        0.5f,  0.5f, 0.0f,  // top right
+        0.5f, -0.5f, 0.0f,  // bottom right
+       -0.5f, -0.5f, 0.0f,  // bottom left
+       -0.5f,  0.5f, 0.0f   // top left 
+    };
+   unsigned int indices[] = {  // note that we start from 0!
+       0, 1, 3,   // first triangle
+       1, 2, 3    // second triangle
+    };  
+
+    unsigned int VAO, VBO, EBO;
     glGenVertexArrays(1, &VAO);
     glGenBuffers(1, &VBO);
+    glGenBuffers(1, &EBO);
 
     // bind VAO first
-    glBindVertexArray(VAO);           
-
+    glBindVertexArray(VAO);      
+    
+    // then VBO
     glBindBuffer(GL_ARRAY_BUFFER, VBO);
-    glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
 
+    // triangule:
+    //glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
+    
+    // rectangle (EBO): 
+    glBufferData(GL_ARRAY_BUFFER, sizeof(vertices2_EBOopt), vertices2_EBOopt, GL_STATIC_DRAW);
+
+
+    // then bind EBO
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
+    glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indices), indices, GL_STATIC_DRAW); 
+    
     glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0);
     glEnableVertexAttribArray(0);
 
@@ -124,7 +158,7 @@ int main()
     glBindBuffer(GL_ARRAY_BUFFER, 0);
 
     // Can also unbind VAO, so other VAO calls won't accidentally
-    // modify this VAO, but htis rarely happens.
+    // modify this VAO, but this rarely happens.
     glBindVertexArray(0);
 
     // --- Render loop ---
@@ -140,7 +174,8 @@ int main()
         // draw first triangle
         glUseProgram(shaderProgram);
         glBindVertexArray(VAO);
-        glDrawArrays(GL_TRIANGLES, 0, 3);
+        glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0); // draw in triangulas, 6 verticies, 
+        //glDrawArrays(GL_TRIANGLES, 0, 3);
 
         // glfw: swap buffers and poll IO events (i.e. key pressed)
         glfwSwapBuffers(window);
