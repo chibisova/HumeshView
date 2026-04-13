@@ -161,6 +161,10 @@ int main()
     // modify this VAO, but this rarely happens.
     glBindVertexArray(0);
 
+    // GL_LINE - drawing in wireframe mode
+    // GL_FILL - drawing in fill mode
+    glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+
     // --- Render loop ---
     while (!glfwWindowShouldClose(window))
     {
