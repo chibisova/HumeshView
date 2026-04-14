@@ -105,13 +105,13 @@ int main()
          0.0f,  0.5f, 0.0f  // top
     };
 
-    float vertices2_bad[] = {
+    float vertices2[] = {
         // first triangle
          0.5f,  0.5f, 0.0f,  // top right
          0.5f, -0.5f, 0.0f,  // bottom right
-        -0.5f,  0.5f, 0.0f,  // top left 
+         0.0f,  0.3f, 0.0f,  // top left 
         // second triangle
-         0.5f, -0.5f, 0.0f,  // bottom right
+         0.0f, -0.3f, 0.0f,  // bottom right
         -0.5f, -0.5f, 0.0f,  // bottom left
         -0.5f,  0.5f, 0.0f   // top left
     }; 
@@ -144,6 +144,8 @@ int main()
     // rectangle (EBO): 
     glBufferData(GL_ARRAY_BUFFER, sizeof(vertices2_EBOopt), vertices2_EBOopt, GL_STATIC_DRAW);
 
+    // two triangules
+    glBufferData(GL_ARRAY_BUFFER, sizeof(vertices2), vertices2, GL_STATIC_DRAW);
 
     // then bind EBO
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
@@ -178,8 +180,15 @@ int main()
         // draw first triangle
         glUseProgram(shaderProgram);
         glBindVertexArray(VAO);
-        glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0); // draw in triangulas, 6 verticies, 
+        
+        // draw rectangle
+        //glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0); // draw in triangulas, 6 verticies, 
+        
+        // draw 1 triangle
         //glDrawArrays(GL_TRIANGLES, 0, 3);
+
+        // draw 2 triangles
+        glDrawArrays(GL_TRIANGLES, 0, 6);
 
         // glfw: swap buffers and poll IO events (i.e. key pressed)
         glfwSwapBuffers(window);
