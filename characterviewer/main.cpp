@@ -24,6 +24,13 @@ const char *fragmentShaderSource = "#version 330 core\n"
     "FragColor = vec4(1.0f, 0.5f, 0.2f, 1.0f);\n"
     "}\n";
 
+const char *yellowFragmentShaderSource = "#version 330 core\n"
+    "out vec4 FragColor;\n"
+    "void main()\n"
+    "{\n"
+    "FragColor = vec4(1.0f, 1.0f, 0.1f, 1.0f);\n"
+    "}\n";
+
 int main()
 {
     // glfw: initialize and configure
@@ -82,6 +89,19 @@ int main()
         glGetShaderInfoLog(fragmentShader, 512, NULL, infoLog);
         std::cout << "ERROR::SHADER::FRAGMENT::COMPILATION_FAILED\n" << infoLog << std::endl;
     }
+
+    // Second fragment shader
+    unsigned int fragmentShader2 = glCreateShader(GL_FRAGMENT_SHADER);
+    glShaderSource(fragmentShader2, 1, &yellowFragmentShaderSource, NULL);
+    glCompileShader(fragmentShader2);
+    // check for shader compile errors
+    glGetShaderiv(fragmentShader2, GL_COMPILE_STATUS, &success);
+    if (!success)
+    {
+        glGetShaderInfoLog(fragmentShader2, 512, NULL, infoLog);
+        std::cout << "ERROR::SHADER::FRAGMENT::COMPILATION_FAILED\n" << infoLog << std::endl;
+    }
+
     // Link shaders
     unsigned int shaderProgram = glCreateProgram();
     glAttachShader(shaderProgram, vertexShader);
@@ -94,8 +114,22 @@ int main()
         glGetProgramInfoLog(shaderProgram, 512, NULL, infoLog);
         std::cout << "ERROR::SHADER::LINKING_FAILED\n" << infoLog << std::endl;
     }
+
+    // Second shader program
+    unsigned int shaderProgram2 = glCreateProgram();
+    glAttachShader(shaderProgram2, vertexShader);
+    glAttachShader(shaderProgram2, fragmentShader2);
+    glLinkProgram(shaderProgram2);
+    glGetProgramiv(shaderProgram2, GL_LINK_STATUS, &success);
+    if (!success)
+    {
+        glGetProgramInfoLog(shaderProgram2, 512, NULL, infoLog);
+        std::cout << "ERROR::SHADER::LINKING_FAILED\n" << infoLog << std::endl;
+    }
+
     glDeleteShader(vertexShader);
     glDeleteShader(fragmentShader);
+    glDeleteShader(fragmentShader2);
 
     // --- GPU setup (happens once before the loop) ---
 
@@ -230,7 +264,7 @@ int main()
         processInput(window);
 
         // render
-        glClearColor(0.3f, 0.3f, 0.5f, 1.0f);
+        glClearColor(0.3f, 0.3f, 0.5f, 1.0f); // BG color
         glClear(GL_COLOR_BUFFER_BIT);
 
         // draw first triangle
@@ -259,6 +293,9 @@ int main()
         // better call of 2 VAOs, VBOs
         glBindVertexArray(VAOs[0]);
         glDrawArrays(GL_TRIANGLES, 0, 3);
+
+        glUseProgram(shaderProgram2);
+
         glBindVertexArray(VAOs[1]);
         glDrawArrays(GL_TRIANGLES, 0, 3);
 
@@ -274,6 +311,7 @@ int main()
     glDeleteVertexArrays(1, &VAO2);
     glDeleteBuffers(1, &VBO2);
     glDeleteProgram(shaderProgram);
+    glDeleteProgram(shaderProgram2);
     
     // glfw: terminate, clearing all previously allocated GLFW resources.
     // ------------------------------------------------------------------
