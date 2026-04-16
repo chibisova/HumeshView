@@ -1,7 +1,7 @@
 #include <glad/glad.h>
 #include <GLFW/glfw3.h>
 
-#include "Shaders/shader_s.h"
+#include "../Shaders/shader_s.h"
 
 #include <iostream>
 
@@ -47,7 +47,7 @@ int main()
 
     // build and compile  shader program
     // ------------------------------------
-    Shader myShader("../Shaders/shader.vs", "../Shaders/shader.fs");
+    Shader myShader("../Exercises/d3_shacl.vs", "../Exercises/d3_shacl.fs");
 
     // --- GPU setup (happens once before the loop) ---
 

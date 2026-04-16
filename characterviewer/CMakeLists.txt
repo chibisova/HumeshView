@@ -32,4 +32,5 @@ endfunction()
 
 add_exercise(d3_blink)
 add_exercise(d3_attr)
+add_exercise(d3_shacl)
 
