@@ -30,4 +30,6 @@ function(add_exercise name)
     )
 endfunction()
 
-add_exercise(d3_ex1)
+add_exercise(d3_blink)
+add_exercise(d3_attr)
+
