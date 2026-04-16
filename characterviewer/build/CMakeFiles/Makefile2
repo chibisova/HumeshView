@@ -64,10 +64,12 @@ CMAKE_BINARY_DIR = /Users/tachibis/LocalDocuments/LocalProjects/HumeshView/chara
 
 # The main recursive "all" target.
 all: CMakeFiles/HelloTriangle.dir/all
+all: CMakeFiles/d3_ex1.dir/all
 .PHONY : all
 
 # The main recursive "codegen" target.
 codegen: CMakeFiles/HelloTriangle.dir/codegen
+codegen: CMakeFiles/d3_ex1.dir/codegen
 .PHONY : codegen
 
 # The main recursive "preinstall" target.
@@ -76,6 +78,7 @@ preinstall:
 
 # The main recursive "clean" target.
 clean: CMakeFiles/HelloTriangle.dir/clean
+clean: CMakeFiles/d3_ex1.dir/clean
 .PHONY : clean
 
 #=============================================================================
@@ -109,6 +112,38 @@ CMakeFiles/HelloTriangle.dir/codegen:
 CMakeFiles/HelloTriangle.dir/clean:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/HelloTriangle.dir/build.make CMakeFiles/HelloTriangle.dir/clean
 .PHONY : CMakeFiles/HelloTriangle.dir/clean
+
+#=============================================================================
+# Target rules for target CMakeFiles/d3_ex1.dir
+
+# All Build rule for target.
+CMakeFiles/d3_ex1.dir/all:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/d3_ex1.dir/build.make CMakeFiles/d3_ex1.dir/depend
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/d3_ex1.dir/build.make CMakeFiles/d3_ex1.dir/build
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --progress-dir=/Users/tachibis/LocalDocuments/LocalProjects/HumeshView/characterviewer/build/CMakeFiles --progress-num=4,5,6 "Built target d3_ex1"
+.PHONY : CMakeFiles/d3_ex1.dir/all
+
+# Build rule for subdir invocation for target.
+CMakeFiles/d3_ex1.dir/rule: cmake_check_build_system
+	$(CMAKE_COMMAND) -E cmake_progress_start /Users/tachibis/LocalDocuments/LocalProjects/HumeshView/characterviewer/build/CMakeFiles 3
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 CMakeFiles/d3_ex1.dir/all
+	$(CMAKE_COMMAND) -E cmake_progress_start /Users/tachibis/LocalDocuments/LocalProjects/HumeshView/characterviewer/build/CMakeFiles 0
+.PHONY : CMakeFiles/d3_ex1.dir/rule
+
+# Convenience name for target.
+d3_ex1: CMakeFiles/d3_ex1.dir/rule
+.PHONY : d3_ex1
+
+# codegen rule for target.
+CMakeFiles/d3_ex1.dir/codegen:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/d3_ex1.dir/build.make CMakeFiles/d3_ex1.dir/codegen
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --progress-dir=/Users/tachibis/LocalDocuments/LocalProjects/HumeshView/characterviewer/build/CMakeFiles --progress-num=4,5,6 "Finished codegen for target d3_ex1"
+.PHONY : CMakeFiles/d3_ex1.dir/codegen
+
+# clean rule for target.
+CMakeFiles/d3_ex1.dir/clean:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/d3_ex1.dir/build.make CMakeFiles/d3_ex1.dir/clean
+.PHONY : CMakeFiles/d3_ex1.dir/clean
 
 #=============================================================================
 # Special targets to cleanup operation of make.

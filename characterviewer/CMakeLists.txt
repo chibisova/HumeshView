@@ -13,10 +13,21 @@ link_directories(
 
 add_executable(HelloTriangle main.cpp glad.c)
 
-
 target_link_libraries(HelloTriangle
     libglfw3.a
     "-framework Cocoa"
     "-framework OpenGL"
     "-framework IOKit"
 )
+
+function(add_exercise name)
+    add_executable(${name} Exercises/${name}.cpp glad.c)
+    target_link_libraries(${name}
+        libglfw3.a
+        "-framework Cocoa"
+        "-framework OpenGL"
+        "-framework IOKit"
+    )
+endfunction()
+
+add_exercise(d3_ex1)
