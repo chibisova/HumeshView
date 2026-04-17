@@ -85,7 +85,7 @@ int main()
 
         // draw first triangle
         //ourShader.use();
-        float xOffset = 0.9f;
+        float xOffset = 0.1f;
         myShader.setFloat("xOffset", xOffset);
         myShader.use();
 
