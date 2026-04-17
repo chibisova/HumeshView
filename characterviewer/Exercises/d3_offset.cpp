@@ -1,7 +1,7 @@
 #include <glad/glad.h>
 #include <GLFW/glfw3.h>
 
-#include "Shaders/shader_s.h"
+#include "../Shaders/shader_s.h"
 
 #include <iostream>
 
@@ -47,7 +47,7 @@ int main()
 
     // build and compile  shader program
     // ------------------------------------
-    Shader myShader("../Shaders/shader.vs", "../Shaders/shader.fs");
+    Shader myShader("../Exercises/d3_offset.vs", "../Exercises/d3_offset.fs");
 
     // --- GPU setup (happens once before the loop) ---
 
@@ -85,7 +85,7 @@ int main()
 
         // draw first triangle
         //ourShader.use();
-        float xOffset = 0.9f;
+        float xOffset = 0.6f;
         myShader.setFloat("xOffset", xOffset);
         myShader.use();
 
